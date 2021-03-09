@@ -23,12 +23,20 @@ macro_rules! export {
 
                     $(
                         let $arg = cx.argument_opt(_arg_index);
-                        let $arg: $atype = $crate::from_value_opt(&mut cx, $arg)?;
+                        let $arg: $atype =
+                            match $crate::from_value_opt(&mut cx, $arg) {
+                                Err(err) => return cx.throw_error(format!("On arg_index: {}, got an error deserializing, was: {}", _arg_index, err)),
+                                Ok(value) => value,
+                        };
                         _arg_index += 1;
                     )*
 
                     let result = $name($( $arg ),*);
-                    let handle = $crate::to_value(&mut cx, &result)?;
+                    let handle =
+                        match $crate::to_value(&mut cx, &result) {
+                            Err(err) => return cx.throw_error(format!("On result, got an error serializing, was: {}", err)),
+                            Ok(handle_value) => handle_value,
+                    };
                     Ok(handle)
                 })?;
             )*
